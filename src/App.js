@@ -12,7 +12,7 @@ function App() {
   });
   const [editId, setEditId] = useState(null);
 
-  const API_URL = "http://localhost:8081/api/books";
+  const API_URL = "https://library-management-backend-ydal.onrender.com/api/books";
 
   useEffect(() => {
     fetchBooks();
