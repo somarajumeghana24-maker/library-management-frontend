@@ -11,14 +11,16 @@ function App() {
   const [category, setCategory] = useState("");
   const [available, setAvailable] = useState(true);
   const [editingId, setEditingId] = useState(null);
+  const [error, setError] = useState("");
 
-  // GET books
   const fetchBooks = async () => {
     try {
+      setError("");
       const res = await axios.get(API_URL);
       setBooks(res.data);
     } catch (err) {
-      console.error(err);
+      console.error("GET error:", err);
+      setError("Unable to load books.");
     }
   };
 
@@ -26,11 +28,19 @@ function App() {
     fetchBooks();
   }, []);
 
-  // ADD or UPDATE book
-  const handleSubmit = async () => {
-    const book = { title, author, category, available };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const book = {
+      title,
+      author,
+      category,
+      available,
+    };
 
     try {
+      setError("");
+
       if (editingId) {
         await axios.put(`${API_URL}/${editingId}`, book);
         setEditingId(null);
@@ -45,21 +55,22 @@ function App() {
 
       fetchBooks();
     } catch (err) {
-      console.error(err);
+      console.error("POST/PUT error:", err);
+      setError("Unable to save book.");
     }
   };
 
-  // DELETE book
   const deleteBook = async (id) => {
     try {
+      setError("");
       await axios.delete(`${API_URL}/${id}`);
       fetchBooks();
     } catch (err) {
-      console.error(err);
+      console.error("DELETE error:", err);
+      setError("Unable to delete book.");
     }
   };
 
-  // EDIT book
   const editBook = (book) => {
     setTitle(book.title);
     setAuthor(book.author);
@@ -72,25 +83,31 @@ function App() {
     <div className="container">
       <h1>Library Management System</h1>
 
-      {/* FORM */}
-      <div className="book-form">
+      {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>}
+
+      <form className="book-form" onSubmit={handleSubmit}>
         <input
           type="text"
           placeholder="Enter book title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          required
         />
+
         <input
           type="text"
           placeholder="Enter author name"
           value={author}
           onChange={(e) => setAuthor(e.target.value)}
+          required
         />
+
         <input
           type="text"
           placeholder="Enter category"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
+          required
         />
 
         <label className="checkbox-label">
@@ -102,12 +119,11 @@ function App() {
           Available
         </label>
 
-        <button onClick={handleSubmit}>
+        <button type="submit">
           {editingId ? "Update Book" : "Add Book"}
         </button>
-      </div>
+      </form>
 
-      {/* LIST */}
       <div className="book-list">
         <h2>Books List</h2>
 
@@ -118,8 +134,14 @@ function App() {
             {books.map((book) => (
               <div className="book-card" key={book.id}>
                 <h3>{book.title}</h3>
-                <p><strong>Author:</strong> {book.author}</p>
-                <p><strong>Category:</strong> {book.category}</p>
+
+                <p>
+                  <strong>Author:</strong> {book.author}
+                </p>
+
+                <p>
+                  <strong>Category:</strong> {book.category}
+                </p>
 
                 <span
                   className={
@@ -133,12 +155,15 @@ function App() {
 
                 <div className="card-buttons">
                   <button
+                    type="button"
                     className="edit-btn"
                     onClick={() => editBook(book)}
                   >
                     Edit
                   </button>
+
                   <button
+                    type="button"
                     className="delete-btn"
                     onClick={() => deleteBook(book.id)}
                   >
