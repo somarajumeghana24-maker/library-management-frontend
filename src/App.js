@@ -2,129 +2,112 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import "./App.css";
 
+const API_URL = "https://library-management-backend-ydal.onrender.com/api/books";
+
 function App() {
   const [books, setBooks] = useState([]);
-  const [formData, setFormData] = useState({
-    title: "",
-    author: "",
-    category: "",
-    available: true,
-  });
-  const [editId, setEditId] = useState(null);
+  const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
+  const [category, setCategory] = useState("");
+  const [available, setAvailable] = useState(true);
+  const [editingId, setEditingId] = useState(null);
 
-  const API_URL = "https://library-management-backend-ydal.onrender.com/api/books";
+  // GET books
+  const fetchBooks = async () => {
+    try {
+      const res = await axios.get(API_URL);
+      setBooks(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   useEffect(() => {
     fetchBooks();
   }, []);
 
-  const fetchBooks = async () => {
-    try {
-      const response = await axios.get(API_URL);
-      setBooks(response.data);
-    } catch (error) {
-      console.error("Error fetching books:", error);
-    }
-  };
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === "checkbox" ? checked : value,
-    });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // ADD or UPDATE book
+  const handleSubmit = async () => {
+    const book = { title, author, category, available };
 
     try {
-      if (editId) {
-        await axios.put(`${API_URL}/${editId}`, formData);
-        setEditId(null);
+      if (editingId) {
+        await axios.put(`${API_URL}/${editingId}`, book);
+        setEditingId(null);
       } else {
-        await axios.post(API_URL, formData);
+        await axios.post(API_URL, book);
       }
 
-      setFormData({
-        title: "",
-        author: "",
-        category: "",
-        available: true,
-      });
+      setTitle("");
+      setAuthor("");
+      setCategory("");
+      setAvailable(true);
 
       fetchBooks();
-    } catch (error) {
-      console.error("Error saving book:", error);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const handleEdit = (book) => {
-    setFormData({
-      title: book.title,
-      author: book.author,
-      category: book.category,
-      available: book.available,
-    });
-    setEditId(book.id);
-  };
-
-  const handleDelete = async (id) => {
+  // DELETE book
+  const deleteBook = async (id) => {
     try {
       await axios.delete(`${API_URL}/${id}`);
       fetchBooks();
-    } catch (error) {
-      console.error("Error deleting book:", error);
+    } catch (err) {
+      console.error(err);
     }
+  };
+
+  // EDIT book
+  const editBook = (book) => {
+    setTitle(book.title);
+    setAuthor(book.author);
+    setCategory(book.category);
+    setAvailable(book.available);
+    setEditingId(book.id);
   };
 
   return (
     <div className="container">
       <h1>Library Management System</h1>
 
-      <form onSubmit={handleSubmit} className="book-form">
+      {/* FORM */}
+      <div className="book-form">
         <input
           type="text"
-          name="title"
           placeholder="Enter book title"
-          value={formData.title}
-          onChange={handleChange}
-          required
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
         />
-
         <input
           type="text"
-          name="author"
           placeholder="Enter author name"
-          value={formData.author}
-          onChange={handleChange}
-          required
+          value={author}
+          onChange={(e) => setAuthor(e.target.value)}
         />
-
         <input
           type="text"
-          name="category"
           placeholder="Enter category"
-          value={formData.category}
-          onChange={handleChange}
-          required
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
         />
 
         <label className="checkbox-label">
           <input
             type="checkbox"
-            name="available"
-            checked={formData.available}
-            onChange={handleChange}
+            checked={available}
+            onChange={() => setAvailable(!available)}
           />
           Available
         </label>
 
-        <button type="submit">
-          {editId ? "Update Book" : "Add Book"}
+        <button onClick={handleSubmit}>
+          {editingId ? "Update Book" : "Add Book"}
         </button>
-      </form>
+      </div>
 
+      {/* LIST */}
       <div className="book-list">
         <h2>Books List</h2>
 
@@ -133,38 +116,31 @@ function App() {
         ) : (
           <div className="books-grid">
             {books.map((book) => (
-              <div key={book.id} className="book-card">
+              <div className="book-card" key={book.id}>
                 <h3>{book.title}</h3>
-
-                <p>
-                  <strong>Author:</strong> {book.author}
-                </p>
-
-                <p>
-                  <strong>Category:</strong> {book.category}
-                </p>
+                <p><strong>Author:</strong> {book.author}</p>
+                <p><strong>Category:</strong> {book.category}</p>
 
                 <span
-                  className={`status ${
-                    book.available ? "available" : "unavailable"
-                  }`}
+                  className={
+                    book.available
+                      ? "status available"
+                      : "status unavailable"
+                  }
                 >
                   {book.available ? "Available" : "Not Available"}
                 </span>
 
                 <div className="card-buttons">
                   <button
-                    type="button"
                     className="edit-btn"
-                    onClick={() => handleEdit(book)}
+                    onClick={() => editBook(book)}
                   >
                     Edit
                   </button>
-
                   <button
-                    type="button"
                     className="delete-btn"
-                    onClick={() => handleDelete(book.id)}
+                    onClick={() => deleteBook(book.id)}
                   >
                     Delete
                   </button>
